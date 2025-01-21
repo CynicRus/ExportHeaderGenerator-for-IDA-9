@@ -307,83 +307,6 @@ class ExportHeaderGenerator(ida_idaapi.plugin_t):
         
         return '; '.join(formatted_args)
 
-    def c_to_delphi_type(self, c_type):
-        # Расширенная карта соответствия типов
-        type_map = {
-            # Базовые типы
-            "void": "procedure",
-            "DWORD": "Cardinal",
-            "WORD": "Word",
-            "BYTE": "Byte",
-            "int": "Integer",
-            "unsigned int": "Cardinal",
-            "long": "Integer",
-            "unsigned long": "Cardinal",
-            "short": "Smallint",
-            "unsigned short": "Word",
-            "char": "AnsiChar",
-            "unsigned char": "Byte",
-            "float": "Single",
-            "double": "Double",
-            "bool": "Boolean",
-            "BOOL": "LongBool",
-            
-            # Указатели и строки
-            "char *": "PAnsiChar",
-            "wchar_t *": "PWideChar",
-            "void *": "Pointer",
-            "LPVOID": "Pointer",
-            "PVOID": "Pointer",
-            
-            # Windows-специфичные типы
-            "HANDLE": "THandle",
-            "HINSTANCE": "HINST",
-            "HWND": "HWND",
-            "UINT": "Cardinal",
-            "DWORD_PTR": "NativeUInt",
-            "SIZE_T": "NativeUInt",
-            "ULONG_PTR": "NativeUInt",
-            
-            # Указатели на базовые типы
-            "DWORD *": "PCardinal",
-            "WORD *": "PWord",
-            "BYTE *": "PByte",
-            "int *": "PInteger",
-            "long *": "PInteger",
-            "float *": "PSingle",
-            "double *": "PDouble",
-            "BOOL *": "PLongBool",
-            
-            # Строковые типы Windows
-            "LPSTR": "PAnsiChar",
-            "LPCSTR": "PAnsiChar",
-            "LPWSTR": "PWideChar",
-            "LPCWSTR": "PWideChar",
-            "TCHAR *": "PWideChar",
-            
-            # Специальные типы
-            "size_t": "NativeUInt",
-            "LONG": "Integer",
-            "ULONG": "Cardinal",
-            "INT_PTR": "NativeInt",
-            "UINT_PTR": "NativeUInt"
-        }
-        
-        # Удаляем const если он присутствует
-        c_type = c_type.replace('const ', '')
-        
-        # Проверяем наличие типа в карте соответствия
-        if c_type in type_map:
-            return type_map[c_type]
-        
-        # Если это указатель на известный тип
-        if c_type.endswith(' *'):
-            base_type = c_type[:-2]
-            if base_type in type_map:
-                return f"P{type_map[base_type]}"
-        
-        # Возвращаем исходный тип, если соответствие не найдено
-        return c_type
 
     def generate_delphi_header(self):
         unit_name = ida_nalt.get_root_filename().split('.')[0]
@@ -502,6 +425,8 @@ class ExportHeaderGenerator(ida_idaapi.plugin_t):
         if '[' in c_type:
             array_base = c_type[:c_type.find('[')].strip()
             array_size = c_type[c_type.find('[')+1:c_type.find(']')]
+            if not array_size.isdigit():
+                array_size = '0'
             base_type = self.c_to_delphi_type(array_base)
             return f"array[0..{int(array_size)-1}] of {base_type}"
 
